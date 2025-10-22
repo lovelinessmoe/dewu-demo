@@ -1,18 +1,18 @@
 {
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "npm run build:client",
   "outputDirectory": "dist/client",
   "rewrites": [
     {
       "source": "/health",
-      "destination": "/api/index"
+      "destination": "/api/standalone"
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index"
+      "destination": "/api/standalone"
     },
     {
       "source": "/dop/(.*)",
-      "destination": "/api/index"
+      "destination": "/api/standalone"
     }
   ]
 }
