@@ -1,7 +1,6 @@
 {
   "name": "dewu-mock-api",
   "version": "1.0.0",
-
   "description": "Mock API server for Dewu (得物) platform interfaces",
   "main": "dist/server/app.js",
   "scripts": {
@@ -12,6 +11,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build:client": "vite build",
     "start": "node dist/server/app.js",
+    "vercel-build": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch"
   },
