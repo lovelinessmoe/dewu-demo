@@ -60,6 +60,97 @@ const createMockToken = (access_token, open_id, scope = ['all']) => {
   return tokenData;
 };
 
+// Serve a simple HTML page for root route
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dewu Mock API</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+            .method { color: #007acc; font-weight: bold; }
+            pre { background: #f0f0f0; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        </style>
+    </head>
+    <body>
+        <h1>🚀 Dewu Mock API</h1>
+        <p>Mock API server for Dewu (得物) platform interfaces</p>
+        
+        <h2>Available Endpoints</h2>
+        
+        <div class="endpoint">
+            <h3><span class="method">GET</span> /health</h3>
+            <p>Health check endpoint</p>
+        </div>
+        
+        <div class="endpoint">
+            <h3><span class="method">POST</span> /api/v1/h5/passport/v1/oauth2/token</h3>
+            <p>Generate OAuth2 access token</p>
+            <pre>{
+  "client_id": "test_client_id",
+  "client_secret": "test_client_secret", 
+  "authorization_code": "test_auth_code_123"
+}</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3><span class="method">POST</span> /api/v1/h5/passport/v1/oauth2/refresh_token</h3>
+            <p>Refresh OAuth2 access token</p>
+            <pre>{
+  "client_id": "test_client_id",
+  "client_secret": "test_client_secret",
+  "refresh_token": "your_refresh_token"
+}</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3><span class="method">POST</span> /dop/api/v1/invoice/list</h3>
+            <p>Get invoice list (requires access_token)</p>
+            <pre>{
+  "access_token": "your_access_token",
+  "page_no": 1,
+  "page_size": 10
+}</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3><span class="method">POST</span> /dop/api/v1/invoice/handle</h3>
+            <p>Handle invoice (requires access_token)</p>
+            <pre>{
+  "access_token": "your_access_token",
+  "order_no": "110011234354",
+  "operation_type": 1,
+  "category_type": 1
+}</pre>
+        </div>
+        
+        <div class="endpoint">
+            <h3><span class="method">POST</span> /dop/api/v1/common/merchant/base/info</h3>
+            <p>Get merchant info (requires access_token)</p>
+            <pre>{
+  "access_token": "your_access_token"
+}</pre>
+        </div>
+        
+        <h2>Usage Flow</h2>
+        <ol>
+            <li>Get access token using <code>/api/v1/h5/passport/v1/oauth2/token</code></li>
+            <li>Use the access token in subsequent API calls</li>
+            <li>Refresh token when needed using <code>/api/v1/h5/passport/v1/oauth2/refresh_token</code></li>
+        </ol>
+        
+        <p><strong>Status:</strong> <span style="color: green;">✅ Online</span></p>
+        <p><strong>Version:</strong> 1.0.0</p>
+        <p><strong>Environment:</strong> Production</p>
+    </body>
+    </html>
+  `);
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({

@@ -1,17 +1,7 @@
 {
-  "buildCommand": "npm run build:client",
-  "outputDirectory": "dist/client",
   "rewrites": [
     {
-      "source": "/health",
-      "destination": "/api/standalone"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/standalone"
-    },
-    {
-      "source": "/dop/(.*)",
+      "source": "/(.*)",
       "destination": "/api/standalone"
     }
   ]
