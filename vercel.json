@@ -1,31 +1,18 @@
 {
-  "version": 2,
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist/client",
-  "functions": {
-    "api/index.js": {
-      "runtime": "@vercel/node@18.x"
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/dop/(.*)",
+      "destination": "/api/index"
     }
-  },
-  "routes": [
-    {
-      "src": "/health",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/dop/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/client/$1"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
