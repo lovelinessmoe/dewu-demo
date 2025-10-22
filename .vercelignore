@@ -1,4 +1,3 @@
-src/
 node_modules/
 .git/
 *.log
@@ -9,3 +8,7 @@ node_modules/
 *.spec.ts
 coverage/
 .nyc_output/
+dist/
+scripts/
+tsconfig*.json
+vite.config.ts
