@@ -1,0 +1,32 @@
+{
+  "tokens": {
+    "defaultExpiration": 7200,
+    "refreshExpiration": 2592000,
+    "validClients": [
+      {
+        "client_id": "test_client_id",
+        "client_secret": "test_client_secret"
+      },
+      {
+        "client_id": "demo_client_id", 
+        "client_secret": "demo_client_secret"
+      },
+      {
+        "client_id": "dev_client_id",
+        "client_secret": "dev_client_secret"
+      }
+    ]
+  },
+  "invoices": {
+    "defaultPageSize": 10,
+    "maxPageSize": 100,
+    "scenarios": ["default", "high_volume", "error_prone", "empty"]
+  },
+  "merchants": {
+    "scenarios": ["default", "inactive_merchants", "new_merchants"]
+  },
+  "responses": {
+    "delayMs": 100,
+    "errorRate": 0.02
+  }
+}

@@ -1,0 +1,40 @@
+[
+  {
+    "invoice_title": "高量测试公司001",
+    "seller_reject_reason": "",
+    "verify_time": "2024-10-15 14:30:25",
+    "category_type": 1,
+    "order_time": "2024-10-10 09:15:30",
+    "invoice_image_url": "https://example.com/invoice/high_vol_001.jpg",
+    "bank_name": "中国银行",
+    "invoice_type": 1,
+    "company_address": "上海市浦东新区陆家嘴金融贸易区",
+    "article_number": "iPhone 14 Pro-深紫色",
+    "bidding_price": 35900,
+    "spu_id": 100001,
+    "invoice_title_type": 2,
+    "spu_title": "【现货发售】Apple iPhone 14 Pro 深紫色 全网通双卡双待5G手机",
+    "bank_account": "开户银行账号HV123456789",
+    "status": 0,
+    "upload_time": "2024-10-12 16:20:15",
+    "apply_time": "2024-10-11 10:45:20",
+    "company_phone": "021-12345678",
+    "handle_flag": 1,
+    "amount": 35900,
+    "seller_post": {
+      "express_no": "SF9901946631496",
+      "take_end_time": "2024-10-16 11:00:00",
+      "sender_name": "高量测试员",
+      "take_start_time": "2024-10-16 10:00:00",
+      "logistics_name": "顺丰速运",
+      "sender_full_address": "上海市浦东新区陆家嘴金融贸易区"
+    },
+    "sku_id": 200001,
+    "reject_time": "",
+    "order_no": "99001232435",
+    "properties": "官方标配 1TB",
+    "tax_number": "91310000999999999X",
+    "reject_reason": "",
+    "seller_post_appointment": false
+  }
+]

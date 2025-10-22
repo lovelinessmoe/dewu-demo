@@ -1,0 +1,9 @@
+{
+  "watch": ["src/server"],
+  "ext": "ts,js",
+  "ignore": ["src/client", "dist", "node_modules"],
+  "exec": "node --loader ts-node/esm --experimental-specifier-resolution=node src/server/app.ts",
+  "env": {
+    "TS_NODE_PROJECT": "./tsconfig.node.json"
+  }
+}

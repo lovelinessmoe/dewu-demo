@@ -1,0 +1,420 @@
+.testInterface {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.testInterface h1 {
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #888;
+  margin-bottom: 2rem;
+}
+
+.authTokenDisplay {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+}
+
+.tokenCode {
+  background: #2a2a2a;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #4ade80;
+  flex: 1;
+}
+
+.clearTokenBtn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.clearTokenBtn:hover {
+  background: #b91c1c;
+}
+
+.testContainer {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.endpointSelector h2 {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.endpointList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.endpointButton {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+}
+
+.endpointButton:hover {
+  border-color: #4ade80;
+  background: #1f2937;
+}
+
+.endpointButton.selected {
+  border-color: #4ade80;
+  background: #1f2937;
+}
+
+.endpointMethod {
+  display: inline-block;
+  background: #4ade80;
+  color: #000;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.endpointPath {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #888;
+  margin-bottom: 0.25rem;
+}
+
+.endpointTitle {
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.authRequired {
+  font-size: 0.75rem;
+  color: #fbbf24;
+  margin-top: 0.5rem;
+}
+
+.testForm {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.testForm h2 {
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.endpointDescription {
+  color: #888;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.parametersSection h3 {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.parameterGroup {
+  margin-bottom: 1rem;
+}
+
+.parameterLabel {
+  display: block;
+  color: #fff;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.required {
+  color: #dc2626;
+  margin-left: 0.25rem;
+}
+
+.parameterDescription {
+  color: #888;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.parameterInput {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.75rem;
+  color: #fff;
+  font-size: 0.875rem;
+}
+
+.parameterInput:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+
+.parameterInput::placeholder {
+  color: #666;
+}
+
+.submitSection {
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.submitButton {
+  background: #4ade80;
+  color: #000;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #22c55e;
+}
+
+.submitButton:disabled {
+  background: #374151;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .testContainer {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .testInterface {
+    padding: 0 1rem;
+  }
+}
+/* Respon
+se Display Styles */
+.responseSection {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #333;
+}
+
+.responseSection h3 {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.responseHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.responseStatus {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statusCode {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+
+.statusSuccess {
+  background: #22c55e;
+  color: #000;
+}
+
+.statusError {
+  background: #dc2626;
+  color: #fff;
+}
+
+.timestamp {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.copyButton {
+  background: #374151;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.copyButton:hover {
+  background: #4b5563;
+}
+
+.errorMessage {
+  background: #7f1d1d;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #fca5a5;
+}
+
+.responseContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.responseTab {
+  background: #2a2a2a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.responseTab h4 {
+  background: #374151;
+  color: #fff;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.jsonViewer {
+  max-height: 400px;
+  overflow: auto;
+}
+
+.jsonCode {
+  margin: 0;
+  padding: 1rem;
+  background: #1a1a1a;
+  color: #e5e7eb;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.headersViewer {
+  padding: 1rem;
+  background: #1a1a1a;
+}
+
+.headerItem {
+  display: flex;
+  margin-bottom: 0.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.headerItem:last-child {
+  margin-bottom: 0;
+}
+
+.headerName {
+  color: #4ade80;
+  font-weight: bold;
+  min-width: 120px;
+}
+
+.headerValue {
+  color: #e5e7eb;
+  margin-left: 0.5rem;
+}
+
+/* JSON Syntax Highlighting */
+.jsonCode {
+  /* String values */
+  --json-string: #22d3ee;
+  /* Property names */
+  --json-key: #4ade80;
+  /* Numbers */
+  --json-number: #f59e0b;
+  /* Booleans */
+  --json-boolean: #a78bfa;
+  /* Null values */
+  --json-null: #6b7280;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .responseHeader {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  
+  .responseStatus {
+    justify-content: space-between;
+  }
+  
+  .jsonViewer {
+    max-height: 300px;
+  }
+  
+  .jsonCode {
+    font-size: 0.75rem;
+  }
+}.tok
+enInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.tokenExpiry,
+.openId {
+  font-family: 'Courier New', monospace;
+}
+
+.loadingSection {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}

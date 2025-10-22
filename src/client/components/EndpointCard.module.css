@@ -1,0 +1,258 @@
+.endpointCard {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.method {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.methodGet {
+  background: #10b981;
+  color: white;
+}
+
+.methodPost {
+  background: #3b82f6;
+  color: white;
+}
+
+.methodPut {
+  background: #f59e0b;
+  color: white;
+}
+
+.methodDelete {
+  background: #ef4444;
+  color: white;
+}
+
+.methodDefault {
+  background: #6b7280;
+  color: white;
+}
+
+.title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.authBadge {
+  background: #7c3aed;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.path {
+  background: #333;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  color: #646cff;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.description {
+  color: #ccc;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.tabs {
+  display: flex;
+  background: #0f0f0f;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 1rem 1.5rem;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #fff;
+  background: #1a1a1a;
+}
+
+.tab.active {
+  color: #646cff;
+  border-bottom-color: #646cff;
+  background: #1a1a1a;
+}
+
+.content {
+  padding: 1.5rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section h4 {
+  color: #fff;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.parametersTable {
+  background: #0f0f0f;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 2fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: #333;
+  font-weight: bold;
+  color: #fff;
+  font-size: 0.875rem;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 2fr;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.paramName {
+  color: #646cff;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.paramType {
+  color: #10b981;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.paramRequired {
+  font-size: 0.875rem;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.optional {
+  color: #6b7280;
+}
+
+.paramDescription {
+  color: #ccc;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.codeBlock {
+  position: relative;
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.copyButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #333;
+  border: none;
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  z-index: 1;
+}
+
+.copyButton:hover {
+  background: #555;
+}
+
+.codeBlock pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.codeBlock code {
+  color: #e5e7eb;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .titleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .authBadge {
+    margin-left: 0;
+  }
+  
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .tableHeader span,
+  .tableRow span,
+  .tableRow code {
+    padding: 0.25rem 0;
+  }
+  
+  .tabs {
+    flex-direction: column;
+  }
+  
+  .tab {
+    text-align: left;
+  }
+}

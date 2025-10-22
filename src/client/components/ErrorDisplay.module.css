@@ -1,0 +1,121 @@
+.errorContainer {
+  border: 1px solid #dc3545;
+  border-radius: 8px;
+  background-color: #f8d7da;
+  color: #721c24;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.errorHeader {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f5c6cb;
+  border-bottom: 1px solid #dc3545;
+  gap: 12px;
+}
+
+.errorIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.errorTitle {
+  font-weight: 600;
+  font-size: 16px;
+  flex-grow: 1;
+}
+
+.dismissButton {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #721c24;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.dismissButton:hover {
+  background-color: rgba(114, 28, 36, 0.1);
+}
+
+.errorContent {
+  padding: 16px;
+}
+
+.errorMessage {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.errorDetails {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #856404;
+  margin-bottom: 12px;
+}
+
+.errorCode,
+.errorStatus {
+  background-color: rgba(114, 28, 36, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.errorData {
+  margin-top: 12px;
+}
+
+.errorData summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #856404;
+  margin-bottom: 8px;
+}
+
+.errorDataContent {
+  background-color: #fff;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 11px;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.errorActions {
+  padding: 12px 16px;
+  background-color: #f5c6cb;
+  border-top: 1px solid #dc3545;
+}
+
+.retryButton {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.retryButton:hover {
+  background-color: #c82333;
+}
+
+.retryButton:active {
+  background-color: #bd2130;
+}
