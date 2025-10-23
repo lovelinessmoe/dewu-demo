@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import styles from './TestInterface.module.css'
 import { apiEndpoints } from '../data/apiEndpoints'
 import type { ApiEndpoint } from '../types/api'
