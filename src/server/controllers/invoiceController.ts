@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { 
   InvoiceListRequest, 
   InvoiceHandleRequest, 
@@ -10,8 +10,10 @@ import {
   InvoiceItem
 } from '../types/index';
 import { AuthenticatedRequest } from '../middleware/auth';
-import { MockDataGenerator } from '../utils/mockDataGenerator';
-import { MockDataLoader } from '../utils/mockDataLoader';
+import { BusinessLogic } from '../../shared/core/index.js';
+
+// 创建业务逻辑实例
+const businessLogic = new BusinessLogic();
 
 /**
  * Invoice Controller
@@ -55,79 +57,15 @@ export class InvoiceController {
         return;
       }
       
-      // Cap page size at 100 items per page
-      const pageSize = Math.min(requestData.page_size, 100);
+      // 使用统一的业务逻辑
+      const result = await businessLogic.getInvoiceList(req.body);
       
-      // Load mock invoice data from JSON file
-      let invoiceItems: InvoiceItem[] = [];
-      try {
-        invoiceItems = await MockDataLoader.loadInvoices();
-      } catch (error) {
-        console.error('Error loading invoice data:', error);
-        // Fall back to generated data if file loading fails
-        invoiceItems = MockDataGenerator.generateInvoiceItems(50);
+      if (!result.success) {
+        res.status(result.error!.status).json(result.error);
+        return;
       }
       
-      // Apply filters
-      let filteredInvoices = [...invoiceItems];
-      
-      // Filter by spu_id
-      if (requestData.spu_id) {
-        filteredInvoices = filteredInvoices.filter(invoice => invoice.spu_id === requestData.spu_id);
-      }
-      
-      // Filter by status
-      if (requestData.status !== undefined) {
-        filteredInvoices = filteredInvoices.filter(invoice => invoice.status === requestData.status);
-      }
-      
-      // Filter by order_no
-      if (requestData.order_no) {
-        filteredInvoices = filteredInvoices.filter(invoice => invoice.order_no === requestData.order_no);
-      }
-      
-      // Filter by invoice_title_type
-      if (requestData.invoice_title_type !== undefined) {
-        filteredInvoices = filteredInvoices.filter(invoice => invoice.invoice_title_type === requestData.invoice_title_type);
-      }
-      
-      // Filter by apply_start_time and apply_end_time
-      if (requestData.apply_start_time) {
-        const startTime = new Date(requestData.apply_start_time);
-        filteredInvoices = filteredInvoices.filter(invoice => {
-          const applyTime = new Date(invoice.apply_time);
-          return applyTime >= startTime;
-        });
-      }
-      
-      if (requestData.apply_end_time) {
-        const endTime = new Date(requestData.apply_end_time);
-        filteredInvoices = filteredInvoices.filter(invoice => {
-          const applyTime = new Date(invoice.apply_time);
-          return applyTime <= endTime;
-        });
-      }
-      
-      // Calculate pagination
-      const totalResults = filteredInvoices.length;
-      const startIndex = (requestData.page_no - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
-      
-      // Generate response matching Dewu specification
-      const response: InvoiceListResponse = {
-        trace_id: MockDataGenerator.generateTraceId(),
-        code: ApiErrorCode.SUCCESS,
-        msg: 'success',
-        data: {
-          page_no: requestData.page_no,
-          page_size: pageSize,
-          total_results: totalResults,
-          list: paginatedInvoices
-        }
-      };
-      
-      res.status(HttpStatusCode.OK).json(response);
+      res.status(HttpStatusCode.OK).json(result.data);
       
     } catch (error) {
       console.error('Error in getInvoiceList:', error);
@@ -230,18 +168,15 @@ export class InvoiceController {
         return;
       }
       
-      // Simulate processing logic - in a real system this would update the database
-      // For mock purposes, we'll just return success
+      // 使用统一的业务逻辑
+      const result = await businessLogic.handleInvoice(req.body);
       
-      // Generate successful response matching Dewu specification
-      const response: InvoiceHandleResponse = {
-        trace_id: MockDataGenerator.generateTraceId(),
-        code: ApiErrorCode.SUCCESS,
-        msg: 'success',
-        data: {}
-      };
+      if (!result.success) {
+        res.status(result.error!.status).json(result.error);
+        return;
+      }
       
-      res.status(HttpStatusCode.OK).json(response);
+      res.status(HttpStatusCode.OK).json(result.data);
       
     } catch (error) {
       console.error('Error in handleInvoice:', error);

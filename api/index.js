@@ -3,11 +3,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-// Import controllers
-const { OAuth2Controller } = require('../dist/server/controllers/oauth2Controller.js');
-const { InvoiceController } = require('../dist/server/controllers/invoiceController.js');
-const { MerchantController } = require('../dist/server/controllers/merchantController.js');
-const { authenticateToken, authenticateAndValidateSignature } = require('../dist/server/middleware/auth.js');
+// 使用统一的核心业务逻辑
+const { BusinessLogic } = require('../src/shared/core/index.js');
+
+// 初始化业务逻辑
+const businessLogic = new BusinessLogic();
 
 const app = express();
 
@@ -28,6 +28,9 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// 初始化业务逻辑
+businessLogic.initialize().catch(console.error);
+
 // Add request ID middleware
 app.use((req, res, next) => {
   req.requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -35,6 +38,20 @@ app.use((req, res, next) => {
   res.setHeader('X-Request-ID', req.requestId);
   next();
 });
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const { access_token } = req.body;
+  
+  const authResult = businessLogic.authenticateToken(access_token);
+  
+  if (!authResult.success) {
+    return res.status(authResult.error.status).json(authResult.error);
+  }
+
+  req.tokenData = authResult.tokenData;
+  next();
+};
 
 // Health check
 app.get('/health', (req, res) => {
@@ -65,15 +82,102 @@ app.get('/api/status', (req, res) => {
 });
 
 // OAuth2 routes
-app.post('/api/v1/h5/passport/v1/oauth2/token', OAuth2Controller.generateToken);
-app.post('/api/v1/h5/passport/v1/oauth2/refresh_token', OAuth2Controller.refreshToken);
+app.post('/api/v1/h5/passport/v1/oauth2/token', (req, res) => {
+  try {
+    const result = businessLogic.generateToken(req.body);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[OAuth2-Token] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
+
+app.post('/api/v1/h5/passport/v1/oauth2/refresh_token', (req, res) => {
+  try {
+    const result = businessLogic.refreshToken(req.body);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[OAuth2-Refresh] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
 
 // Invoice routes
-app.post('/dop/api/v1/invoice/list', authenticateAndValidateSignature, InvoiceController.getInvoiceList);
-app.post('/dop/api/v1/invoice/handle', authenticateAndValidateSignature, InvoiceController.handleInvoice);
+app.post('/dop/api/v1/invoice/list', authenticateToken, async (req, res) => {
+  try {
+    const result = await businessLogic.getInvoiceList(req.body);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[Invoice-List] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
+
+app.post('/dop/api/v1/invoice/handle', authenticateToken, async (req, res) => {
+  try {
+    const result = await businessLogic.handleInvoice(req.body);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[Invoice-Handle] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
 
 // Merchant routes
-app.post('/dop/api/v1/common/merchant/base/info', authenticateToken, MerchantController.getMerchantBaseInfo);
+app.post('/dop/api/v1/common/merchant/base/info', authenticateToken, (req, res) => {
+  try {
+    const result = businessLogic.getMerchantInfo();
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[Merchant-Info] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
 
 // 404 handler
 app.use('*', (req, res) => {

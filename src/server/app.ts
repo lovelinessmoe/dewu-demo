@@ -1,4 +1,9 @@
 /// <reference path="./types/express.d.ts" />
+
+// Load environment variables from .env.local file
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

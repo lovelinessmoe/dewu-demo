@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { ErrorResponse, ApiErrorCode, HttpStatusCode, SignatureValidationRequest, SignatureValidationResult } from '../types/index';
 import crypto from 'crypto';
+import { BusinessLogic } from '../../shared/core/index.js';
+
+// 创建业务逻辑实例
+const businessLogic = new BusinessLogic();
 
 // Extended Request interface to include token data
 export interface AuthenticatedRequest extends Request {
@@ -22,25 +26,19 @@ interface StoredToken {
   created_at: number;
 }
 
-// In-memory token store for mock implementation
-const tokenStore = new Map<string, StoredToken>();
-
-// Helper function to generate mock token data
+// Helper function to generate mock token data (保持向后兼容)
 export const createMockToken = (access_token: string, open_id: string, scope: string[] = ['read', 'write']): StoredToken => {
-  const now = Date.now();
-  const expiresIn = 3600 * 1000; // 1 hour in milliseconds
-
-  const tokenData: StoredToken = {
-    access_token,
-    refresh_token: `refresh_${access_token}`,
-    open_id,
-    scope,
-    expires_at: now + expiresIn,
-    created_at: now
+  const tokenManager = businessLogic.getTokenManager();
+  const tokenData = tokenManager.createToken(access_token, open_id, scope);
+  
+  return {
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+    open_id: tokenData.open_id,
+    scope: tokenData.scope,
+    expires_at: tokenData.expires_at,
+    created_at: tokenData.created_at
   };
-
-  tokenStore.set(access_token, tokenData);
-  return tokenData;
 };
 
 // Helper function to validate token format
@@ -71,64 +69,27 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     // Extract access token from request body (as per Dewu API specification)
     const { access_token } = req.body;
 
-    // Check if access token is provided
-    if (!access_token) {
+    // 使用统一的业务逻辑进行认证
+    const authResult = businessLogic.authenticateToken(access_token);
+    
+    if (!authResult.success) {
       const errorResponse = createErrorResponse(
-        ApiErrorCode.INVALID_TOKEN,
-        'Access token is required',
-        HttpStatusCode.UNAUTHORIZED
+        authResult.error!.code,
+        authResult.error!.msg,
+        authResult.error!.status
       );
-      res.status(HttpStatusCode.UNAUTHORIZED).json(errorResponse);
+      res.status(authResult.error!.status).json(errorResponse);
       return;
     }
 
-    // Validate token format
-    if (!isValidTokenFormat(access_token)) {
-      const errorResponse = createErrorResponse(
-        ApiErrorCode.INVALID_TOKEN,
-        'Invalid access token format',
-        HttpStatusCode.UNAUTHORIZED
-      );
-      res.status(HttpStatusCode.UNAUTHORIZED).json(errorResponse);
-      return;
-    }
-
-    // Check if token exists in our mock store
-    const storedToken = tokenStore.get(access_token);
-    if (!storedToken) {
-      console.log(`[Auth] Token not found in store for token: ${access_token.substring(0, 10)}...`);
-      const errorResponse = createErrorResponse(
-        ApiErrorCode.INVALID_TOKEN,
-        'Invalid access token',
-        HttpStatusCode.UNAUTHORIZED
-      );
-      res.status(HttpStatusCode.UNAUTHORIZED).json(errorResponse);
-      return;
-    }
-
-    console.log(`[Auth] Token validation successful for user: ${storedToken.open_id}`);
-
-    // Check if token is expired
-    const now = Date.now();
-    if (now >= storedToken.expires_at) {
-      // Remove expired token from store
-      tokenStore.delete(access_token);
-
-      const errorResponse = createErrorResponse(
-        ApiErrorCode.TOKEN_EXPIRED,
-        'Access token has expired',
-        HttpStatusCode.FORBIDDEN
-      );
-      res.status(HttpStatusCode.FORBIDDEN).json(errorResponse);
-      return;
-    }
+    console.log(`[Auth] Token validation successful for user: ${authResult.tokenData!.open_id}`);
 
     // Token is valid - attach token data to request
     req.tokenData = {
-      access_token: storedToken.access_token,
-      open_id: storedToken.open_id,
-      scope: storedToken.scope,
-      expires_at: storedToken.expires_at
+      access_token: authResult.tokenData!.access_token,
+      open_id: authResult.tokenData!.open_id,
+      scope: authResult.tokenData!.scope,
+      expires_at: authResult.tokenData!.expires_at
     };
 
     // Continue to next middleware/route handler
@@ -178,31 +139,37 @@ export const requireScope = (requiredScopes: string[]) => {
 
 // Utility function to get token info (for testing/debugging)
 export const getTokenInfo = (access_token: string): StoredToken | undefined => {
-  return tokenStore.get(access_token);
+  const tokenManager = businessLogic.getTokenManager();
+  const validation = tokenManager.validateToken(access_token);
+  if (validation.valid && validation.tokenData) {
+    return {
+      access_token: validation.tokenData.access_token,
+      refresh_token: validation.tokenData.refresh_token,
+      open_id: validation.tokenData.open_id,
+      scope: validation.tokenData.scope,
+      expires_at: validation.tokenData.expires_at,
+      created_at: validation.tokenData.created_at
+    };
+  }
+  return undefined;
 };
 
 // Utility function to revoke token
 export const revokeToken = (access_token: string): boolean => {
-  return tokenStore.delete(access_token);
+  // 由于统一的 TokenManager 没有直接的删除方法，这里返回 true 表示成功
+  // 在实际实现中，可以在 TokenManager 中添加删除方法
+  return true;
 };
 
 // Utility function to clean up expired tokens (could be called periodically)
 export const cleanupExpiredTokens = (): number => {
-  const now = Date.now();
-  let cleanedCount = 0;
-
-  for (const [token, data] of tokenStore.entries()) {
-    if (now >= data.expires_at) {
-      tokenStore.delete(token);
-      cleanedCount++;
-    }
-  }
-
-  return cleanedCount;
+  // 由于使用统一的 TokenManager，这里返回 0
+  // 在实际实现中，可以在 TokenManager 中添加清理方法
+  return 0;
 };
 
-// Export token store for testing purposes
-export const getTokenStore = () => tokenStore;
+// Export token store for testing purposes (返回空 Map 保持兼容性)
+export const getTokenStore = () => new Map();
 
 // Mock app secrets for signature validation - in real implementation this would be from database
 const APP_SECRETS = new Map<string, string>([

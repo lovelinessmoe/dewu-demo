@@ -13,24 +13,36 @@ A mock API server for Dewu (得物) platform interfaces built with React and Exp
 
 ## Quick Start
 
-1. Install dependencies:
+### 1. Install dependencies
 ```bash
 npm install
 ```
 
-2. Copy environment variables:
+### 2. Set up environment variables
 ```bash
-cp .env.example .env
+# Option 1: Use the setup script
+./setup-env.sh
+
+# Option 2: Manual setup
+cp .env.example .env.local
+# Then edit .env.local with your Supabase credentials
 ```
 
-3. Start development server:
+### 3. Configure Supabase (Optional but recommended)
+- Create a Supabase project
+- Run the SQL from `supabase-setup.sql`
+- Add your credentials to `.env.local`
+- See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed instructions
+
+### 4. Start development server
 ```bash
 npm run dev
 ```
 
-4. Open your browser:
+### 5. Open your browser
 - Frontend: http://localhost:5173
 - API Server: http://localhost:3000
+- API Documentation: http://localhost:3000 (when using standalone API)
 
 ## API Endpoints
 
@@ -55,4 +67,17 @@ npm run dev
 
 ## Configuration
 
-See `.env.example` for available environment variables.
+### Environment Variables
+- See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for detailed configuration guide
+- Copy `.env.example` to `.env.local` and fill in your values
+- Required: `SUPABASE_URL` and `SUPABASE_ANON_KEY` for database functionality
+
+### Database Setup
+- See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for Supabase configuration
+- The API works with fallback mock data if Supabase is not configured
+
+### Files Overview
+- `.env.example` - Environment variables template (committed to Git)
+- `.env.local` - Your local environment variables (ignored by Git)
+- `supabase-setup.sql` - Database schema and initial data
+- `setup-env.sh` - Quick setup script for environment variables

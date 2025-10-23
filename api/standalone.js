@@ -2,9 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const crypto = require('crypto');
+
+// 使用统一的核心业务逻辑
+const { BusinessLogic } = require('../src/shared/core/index.js');
+
+// 初始化业务逻辑
+const businessLogic = new BusinessLogic();
 
 const app = express();
+
+// 初始化业务逻辑
+businessLogic.initialize().catch(console.error);
 
 // Middleware
 app.use(helmet({
@@ -30,35 +38,6 @@ app.use((req, res, next) => {
   res.setHeader('X-Request-ID', req.requestId);
   next();
 });
-
-// Mock token store
-const tokenStore = new Map();
-
-// Helper functions
-const generateRandomString = (length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') => {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += charset.charAt(Math.floor(Math.random() * charset.length));
-  }
-  return result;
-};
-
-const createMockToken = (access_token, open_id, scope = ['all']) => {
-  const now = Date.now();
-  const expiresIn = 3600 * 1000; // 1 hour
-  
-  const tokenData = {
-    access_token,
-    refresh_token: `refresh_${access_token}`,
-    open_id,
-    scope,
-    expires_at: now + expiresIn,
-    created_at: now
-  };
-  
-  tokenStore.set(access_token, tokenData);
-  return tokenData;
-};
 
 // Serve a simple HTML page for root route
 app.get('/', (req, res) => {
@@ -109,11 +88,23 @@ app.get('/', (req, res) => {
         
         <div class="endpoint">
             <h3><span class="method">POST</span> /dop/api/v1/invoice/list</h3>
-            <p>Get invoice list (requires access_token)</p>
+            <p>Get invoice list with filtering support (requires access_token)</p>
+            <p><strong>Available filters:</strong></p>
+            <ul>
+                <li><code>spu_id</code>: Filter by product SPU ID (12345, 23456, 34567, 45678, 56789)</li>
+                <li><code>status</code>: Filter by status (0=待处理, 2=审核通过, 3=已驳回, 5=卖家已驳回)</li>
+                <li><code>order_no</code>: Filter by order number</li>
+                <li><code>invoice_title_type</code>: Filter by title type (1=个人, 2=企业)</li>
+                <li><code>apply_start_time</code>: Filter by start time (YYYY-MM-DD HH:mm:ss)</li>
+                <li><code>apply_end_time</code>: Filter by end time (YYYY-MM-DD HH:mm:ss)</li>
+            </ul>
             <pre>{
   "access_token": "your_access_token",
   "page_no": 1,
-  "page_size": 10
+  "page_size": 10,
+  "status": 0,
+  "spu_id": 12345,
+  "invoice_title_type": 2
 }</pre>
         </div>
         
@@ -143,9 +134,37 @@ app.get('/', (req, res) => {
             <li>Refresh token when needed using <code>/api/v1/h5/passport/v1/oauth2/refresh_token</code></li>
         </ol>
         
+        <h2>Data Storage</h2>
+        <p>This API uses <strong>Supabase</strong> for persistent data storage with automatic fallback to mock data.</p>
+        <ul>
+            <li>✅ Real-time filtering and pagination</li>
+            <li>✅ Persistent invoice status updates</li>
+            <li>✅ Automatic fallback when Supabase is unavailable</li>
+        </ul>
+        
+        <h2>Environment Variables</h2>
+        <p>Configure these in your Vercel deployment:</p>
+        <ul>
+            <li><code>SUPABASE_URL</code>: Your Supabase project URL</li>
+            <li><code>SUPABASE_ANON_KEY</code>: Your Supabase anonymous key</li>
+        </ul>
+        
         <p><strong>Status:</strong> <span style="color: green;">✅ Online</span></p>
         <p><strong>Version:</strong> 1.0.0</p>
         <p><strong>Environment:</strong> Production</p>
+        <p><strong>Database:</strong> <span id="db-status">Checking...</span></p>
+        
+        <script>
+        // Check database status
+        fetch('/health')
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('db-status').innerHTML = '<span style="color: green;">✅ Connected</span>';
+          })
+          .catch(err => {
+            document.getElementById('db-status').innerHTML = '<span style="color: orange;">⚠️ Fallback Mode</span>';
+          });
+        </script>
     </body>
     </html>
   `);
@@ -182,39 +201,15 @@ app.get('/api/status', (req, res) => {
 // OAuth2 token generation
 app.post('/api/v1/h5/passport/v1/oauth2/token', (req, res) => {
   try {
-    const { client_id, client_secret, authorization_code } = req.body;
+    const result = businessLogic.generateToken(req.body);
     
-    if (!client_id || !client_secret || !authorization_code) {
-      return res.status(400).json({
-        code: 1001,
-        msg: 'Missing required parameters',
-        status: 400
-      });
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
     }
 
-    const tokenResponse = {
-      code: 200,
-      msg: 'success',
-      data: {
-        scope: ['all'],
-        open_id: generateRandomString(16),
-        access_token: generateRandomString(58),
-        access_token_expires_in: 31536000,
-        refresh_token: generateRandomString(58),
-        refresh_token_expires_in: 31536000
-      },
-      status: 200
-    };
-
-    // Store token
-    createMockToken(
-      tokenResponse.data.access_token,
-      tokenResponse.data.open_id,
-      tokenResponse.data.scope
-    );
-
-    res.json(tokenResponse);
+    res.json(result.data);
   } catch (error) {
+    console.error('[OAuth2-Token] Error:', error);
     res.status(500).json({
       code: 5000,
       msg: 'Internal server error',
@@ -226,39 +221,15 @@ app.post('/api/v1/h5/passport/v1/oauth2/token', (req, res) => {
 // OAuth2 token refresh
 app.post('/api/v1/h5/passport/v1/oauth2/refresh_token', (req, res) => {
   try {
-    const { client_id, client_secret, refresh_token } = req.body;
+    const result = businessLogic.refreshToken(req.body);
     
-    if (!client_id || !client_secret || !refresh_token) {
-      return res.status(400).json({
-        code: 1001,
-        msg: 'Missing required parameters',
-        status: 400
-      });
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
     }
 
-    const tokenResponse = {
-      code: 200,
-      msg: 'success',
-      data: {
-        scope: ['all'],
-        open_id: generateRandomString(16),
-        access_token: generateRandomString(58),
-        access_token_expires_in: 31536000,
-        refresh_token: generateRandomString(58),
-        refresh_token_expires_in: 31536000
-      },
-      status: 200
-    };
-
-    // Store new token
-    createMockToken(
-      tokenResponse.data.access_token,
-      tokenResponse.data.open_id,
-      tokenResponse.data.scope
-    );
-
-    res.json(tokenResponse);
+    res.json(result.data);
   } catch (error) {
+    console.error('[OAuth2-Refresh] Error:', error);
     res.status(500).json({
       code: 5000,
       msg: 'Internal server error',
@@ -271,93 +242,30 @@ app.post('/api/v1/h5/passport/v1/oauth2/refresh_token', (req, res) => {
 const authenticateToken = (req, res, next) => {
   const { access_token } = req.body;
   
-  if (!access_token) {
-    return res.status(401).json({
-      code: 1002,
-      msg: 'Access token is required',
-      status: 401
-    });
-  }
+  const authResult = businessLogic.authenticateToken(access_token);
   
-  const storedToken = tokenStore.get(access_token);
-  if (!storedToken) {
-    return res.status(401).json({
-      code: 1002,
-      msg: 'Invalid access token',
-      status: 401
-    });
+  if (!authResult.success) {
+    return res.status(authResult.error.status).json(authResult.error);
   }
-  
-  if (Date.now() >= storedToken.expires_at) {
-    tokenStore.delete(access_token);
-    return res.status(403).json({
-      code: 1003,
-      msg: 'Access token has expired',
-      status: 403
-    });
-  }
-  
-  req.tokenData = storedToken;
+
+  req.tokenData = authResult.tokenData;
   next();
 };
 
-// Invoice list
-app.post('/dop/api/v1/invoice/list', authenticateToken, (req, res) => {
-  try {
-    const { page_no = 1, page_size = 10 } = req.body;
-    
-    // Generate mock invoice data
-    const mockInvoices = Array.from({ length: Math.min(page_size, 5) }, (_, i) => ({
-      invoice_title: `测试公司${i + 1}`,
-      seller_reject_reason: '',
-      verify_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      category_type: 1,
-      order_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      invoice_image_url: `https://example.com/invoice/img_${String(i + 1).padStart(3, '0')}.jpg`,
-      bank_name: '中国银行',
-      invoice_type: 1,
-      company_address: '上海市普陀区交通局888号',
-      article_number: `iPhone 14-黑色`,
-      bidding_price: 25900,
-      spu_id: 12345 + i,
-      invoice_title_type: 2,
-      spu_title: '【现货发售】Apple iPhone 14 黑色 全网通双卡双待5G手机',
-      bank_account: '开户银行账号123456789',
-      status: 0,
-      upload_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      apply_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      company_phone: '021-88888888',
-      handle_flag: 1,
-      amount: 25900,
-      seller_post: {
-        express_no: 'SF1301946631496',
-        take_end_time: '2024-10-16 11:00:00',
-        sender_name: '张三',
-        take_start_time: '2024-10-16 10:00:00',
-        logistics_name: '顺丰速运',
-        sender_full_address: '上海市普陀区交通局888号'
-      },
-      sku_id: 67890 + i,
-      reject_time: '',
-      order_no: `1100123243${5 + i}`,
-      properties: '官方标配 128GB',
-      tax_number: '91310000123456789X',
-      reject_reason: '',
-      seller_post_appointment: false
-    }));
 
-    res.json({
-      trace_id: generateRandomString(32, '0123456789'),
-      code: 0,
-      msg: 'success',
-      data: {
-        page_no: parseInt(page_no),
-        page_size: parseInt(page_size),
-        total_results: 5,
-        list: mockInvoices
-      }
-    });
+
+// Invoice list with Supabase filtering support
+app.post('/dop/api/v1/invoice/list', authenticateToken, async (req, res) => {
+  try {
+    const result = await businessLogic.getInvoiceList(req.body);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
   } catch (error) {
+    console.error('[Invoice-List] Error:', error);
     res.status(500).json({
       code: 5000,
       msg: 'Internal server error',
@@ -366,26 +274,18 @@ app.post('/dop/api/v1/invoice/list', authenticateToken, (req, res) => {
   }
 });
 
-// Invoice handle
-app.post('/dop/api/v1/invoice/handle', authenticateToken, (req, res) => {
+// Invoice handle - can modify invoice status in Supabase
+app.post('/dop/api/v1/invoice/handle', authenticateToken, async (req, res) => {
   try {
-    const { order_no, operation_type, category_type } = req.body;
+    const result = await businessLogic.handleInvoice(req.body);
     
-    if (!order_no || !operation_type || !category_type) {
-      return res.status(400).json({
-        code: 1001,
-        msg: 'Missing required parameters',
-        status: 400
-      });
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
     }
 
-    res.json({
-      trace_id: generateRandomString(32, '0123456789'),
-      code: 200,
-      msg: 'success',
-      data: {}
-    });
+    res.json(result.data);
   } catch (error) {
+    console.error('[Invoice-Handle] Error:', error);
     res.status(500).json({
       code: 5000,
       msg: 'Internal server error',
@@ -397,17 +297,15 @@ app.post('/dop/api/v1/invoice/handle', authenticateToken, (req, res) => {
 // Merchant info
 app.post('/dop/api/v1/common/merchant/base/info', authenticateToken, (req, res) => {
   try {
-    res.json({
-      domain: '',
-      code: 200,
-      msg: 'success',
-      data: {
-        merchant_id: generateRandomString(16),
-        type_id: generateRandomString(12)
-      },
-      errors: []
-    });
+    const result = businessLogic.getMerchantInfo();
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
   } catch (error) {
+    console.error('[Merchant-Info] Error:', error);
     res.status(500).json({
       code: 5000,
       msg: 'Internal server error',
@@ -438,5 +336,18 @@ app.use((error, req, res, next) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// 如果直接运行此文件，启动服务器
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`🚀 Dewu Mock API Server (Standalone) started successfully`);
+    console.log(`📍 Server running on port ${port}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🏥 Health Check: http://localhost:${port}/health`);
+    console.log(`📊 API Status: http://localhost:${port}/api/status`);
+    console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  });
+}
 
 module.exports = app;
