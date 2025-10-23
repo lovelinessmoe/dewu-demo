@@ -4,7 +4,8 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react({
-    jsxRuntime: 'automatic'
+    jsxRuntime: 'automatic',
+    jsxImportSource: 'react'
   })],
   root: 'src/client',
   publicDir: 'public',

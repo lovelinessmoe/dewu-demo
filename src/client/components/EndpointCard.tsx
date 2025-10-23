@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import type { ApiEndpoint } from '../types/api'
 import styles from './EndpointCard.module.css'
 

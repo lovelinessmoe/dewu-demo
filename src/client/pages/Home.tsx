@@ -10,8 +10,8 @@ function Home() {
           Mock API server for Dewu platform integration testing
         </p>
         <p className={styles.description}>
-          This application provides mock implementations of Dewu platform APIs, 
-          allowing developers to test their integrations without using real credentials 
+          This application provides mock implementations of Dewu platform APIs,
+          allowing developers to test their integrations without using real credentials
           or making actual API calls.
         </p>
       </div>

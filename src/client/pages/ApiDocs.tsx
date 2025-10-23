@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { apiEndpoints, apiCategories } from '../data/apiEndpoints'
 import EndpointCard from '../components/EndpointCard.tsx'
 import styles from './ApiDocs.module.css'
