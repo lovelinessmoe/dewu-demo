@@ -5,9 +5,13 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   root: 'src/client',
+  publicDir: 'public',
   build: {
     outDir: '../../dist/client',
     emptyOutDir: true,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'src/client/index.html')
+    }
   },
   resolve: {
     alias: {
