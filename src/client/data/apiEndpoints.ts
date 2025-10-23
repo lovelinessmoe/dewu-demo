@@ -172,7 +172,7 @@ export const apiEndpoints: ApiEndpoint[] = [
           example: 'access_token_string'
         },
         {
-          name: 'page',
+          name: 'page_no',
           type: 'number',
           required: false,
           description: 'Page number (default: 1)',

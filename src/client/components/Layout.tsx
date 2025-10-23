@@ -37,6 +37,12 @@ function Layout({ children }: LayoutProps) {
             >
               Test Interface
             </Link>
+            <Link 
+              to="/manage" 
+              className={`${styles.navLink} ${isActive('/manage') ? styles.active : ''}`}
+            >
+              Invoice Manager
+            </Link>
           </nav>
         </div>
       </header>

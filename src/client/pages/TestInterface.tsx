@@ -146,7 +146,7 @@ function TestInterface() {
         case 'invoice-list':
           apiCall = () => apiClient.getInvoiceList({
             access_token: formData.access_token as string,
-            page: formData.page as number || 1,
+            page_no: formData.page_no as number || 1,
             page_size: formData.page_size as number || 20
           })
           break

@@ -1,10 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { InvoiceItem } from '../types/index';
+import { InvoiceItem, ApiErrorCode, HttpStatusCode, generateTraceId, mapDatabaseError } from '../types/index';
 
 export class SupabaseService {
   private static instance: SupabaseService;
-  private supabase: SupabaseClient | null = null;
-  private isAvailable: boolean = false;
+  private supabase!: SupabaseClient;
 
   private constructor() {
     this.initializeSupabase();
@@ -21,19 +20,21 @@ export class SupabaseService {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-    if (supabaseUrl && supabaseKey && supabaseUrl !== 'https://your-project.supabase.co') {
-      try {
-        this.supabase = createClient(supabaseUrl, supabaseKey);
-        this.isAvailable = true;
-        console.log('[Supabase] Service initialized successfully');
-        console.log('[Supabase] URL:', supabaseUrl);
-      } catch (error) {
-        console.error('[Supabase] Failed to initialize:', error);
-        this.isAvailable = false;
-      }
-    } else {
-      console.log('[Supabase] Not configured, using fallback data');
-      this.isAvailable = false;
+    if (!supabaseUrl || !supabaseKey || supabaseUrl === 'https://your-project.supabase.co') {
+      const error = new Error('Supabase configuration is missing or invalid. Please check SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
+      error.name = 'DATABASE_CONNECTION_FAILED';
+      throw error;
+    }
+
+    try {
+      this.supabase = createClient(supabaseUrl, supabaseKey);
+      console.log('[Supabase] Service initialized successfully');
+      console.log('[Supabase] URL:', supabaseUrl);
+    } catch (error) {
+      console.error('[Supabase] Failed to initialize:', error);
+      const dbError = new Error(`Failed to initialize Supabase client: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      dbError.name = 'DATABASE_CONNECTION_FAILED';
+      throw dbError;
     }
   }
 
@@ -46,11 +47,7 @@ export class SupabaseService {
     apply_start_time?: string;
     apply_end_time?: string;
     invoice_title_type?: number;
-  }): Promise<{ data: InvoiceItem[]; count: number } | null> {
-    if (!this.isAvailable || !this.supabase) {
-      return null;
-    }
-
+  }): Promise<{ data: InvoiceItem[]; count: number }> {
     try {
       const {
         page_no = 1,
@@ -67,7 +64,7 @@ export class SupabaseService {
       const pageSizeNum = Math.min(parseInt(String(page_size)), 20);
       const offset = (pageNo - 1) * pageSizeNum;
 
-      // Build query
+      // Build query with consistent sorting
       let query = this.supabase.from('invoices').select('*', { count: 'exact' });
 
       // Apply filters
@@ -95,6 +92,9 @@ export class SupabaseService {
         query = query.lte('apply_time', apply_end_time);
       }
 
+      // Add consistent sorting (ORDER BY upload_time DESC)
+      query = query.order('upload_time', { ascending: false });
+
       // Add pagination
       query = query.range(offset, offset + pageSizeNum - 1);
 
@@ -103,7 +103,9 @@ export class SupabaseService {
 
       if (error) {
         console.error('[Supabase] Query error:', error);
-        return null;
+        const dbError = new Error(`Database query failed: ${error.message}`);
+        dbError.name = 'DATABASE_QUERY_FAILED';
+        throw dbError;
       }
 
       console.log(`[Supabase] Query successful: ${data?.length || 0} items, total: ${count}`);
@@ -111,15 +113,20 @@ export class SupabaseService {
 
     } catch (error) {
       console.error('[Supabase] Error in getInvoices:', error);
-      return null;
+      if (error instanceof Error) {
+        // Preserve the error type if it's already set
+        if (!error.name || error.name === 'Error') {
+          error.name = 'DATABASE_QUERY_FAILED';
+        }
+        throw error;
+      }
+      const dbError = new Error(`Failed to retrieve invoices: ${error}`);
+      dbError.name = 'DATABASE_QUERY_FAILED';
+      throw dbError;
     }
   }
 
   public async updateInvoice(order_no: string, updateData: Partial<InvoiceItem>): Promise<boolean> {
-    if (!this.isAvailable || !this.supabase) {
-      return false;
-    }
-
     try {
       const { data, error } = await this.supabase
         .from('invoices')
@@ -129,7 +136,9 @@ export class SupabaseService {
 
       if (error) {
         console.error('[Supabase] Update error:', error);
-        return false;
+        const dbError = new Error(`Failed to update invoice: ${error.message}`);
+        dbError.name = 'DATABASE_QUERY_FAILED';
+        throw dbError;
       }
 
       if (data && data.length > 0) {
@@ -137,60 +146,58 @@ export class SupabaseService {
         return true;
       } else {
         console.log(`[Supabase] Invoice ${order_no} not found`);
-        return false;
+        const notFoundError = new Error(`Invoice with order_no ${order_no} not found`);
+        notFoundError.name = 'RESOURCE_NOT_FOUND';
+        throw notFoundError;
       }
 
     } catch (error) {
       console.error('[Supabase] Error in updateInvoice:', error);
-      return false;
+      if (error instanceof Error) {
+        // Preserve the error type if it's already set
+        if (!error.name || error.name === 'Error') {
+          error.name = 'DATABASE_QUERY_FAILED';
+        }
+        throw error;
+      }
+      const dbError = new Error(`Failed to update invoice: ${error}`);
+      dbError.name = 'DATABASE_QUERY_FAILED';
+      throw dbError;
     }
   }
 
-  public async initializeData(mockData: InvoiceItem[]): Promise<boolean> {
-    if (!this.isAvailable || !this.supabase) {
-      return false;
-    }
-
+  public async addInvoices(invoices: InvoiceItem[]): Promise<boolean> {
     try {
-      // Check if data already exists
-      const { data: existingInvoices, error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('invoices')
-        .select('*')
-        .limit(1);
+        .insert(invoices)
+        .select();
 
-      if (error && error.code === 'PGRST116') {
-        console.log('[Supabase] Table does not exist, skipping initialization');
-        return false;
+      if (error) {
+        console.error('[Supabase] Insert error:', error);
+        const dbError = new Error(`Failed to insert invoices: ${error.message}`);
+        dbError.name = 'DATABASE_QUERY_FAILED';
+        throw dbError;
       }
 
-      if (existingInvoices && existingInvoices.length > 0) {
-        console.log('[Supabase] Data already exists, skipping initialization');
-        return true;
-      }
-
-      // Insert initial data
-      console.log('[Supabase] Inserting initial data...');
-      const { error: insertError } = await this.supabase
-        .from('invoices')
-        .insert(mockData);
-
-      if (insertError) {
-        console.error('[Supabase] Error inserting data:', insertError);
-        return false;
-      }
-
-      console.log('[Supabase] Initial data inserted successfully');
+      console.log(`[Supabase] Successfully inserted ${data?.length || 0} invoices`);
       return true;
-
     } catch (error) {
-      console.error('[Supabase] Error in initializeData:', error);
-      return false;
+      console.error('[Supabase] Error adding invoices:', error);
+      if (error instanceof Error) {
+        // Preserve the error type if it's already set
+        if (!error.name || error.name === 'Error') {
+          error.name = 'DATABASE_QUERY_FAILED';
+        }
+        throw error;
+      }
+      const dbError = new Error(`Failed to add invoices: ${error}`);
+      dbError.name = 'DATABASE_QUERY_FAILED';
+      throw dbError;
     }
   }
 
-  public isSupabaseAvailable(): boolean {
-    return this.isAvailable;
-  }
+
 }
 
 export const supabaseService = SupabaseService.getInstance();

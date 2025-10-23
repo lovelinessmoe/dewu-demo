@@ -16,6 +16,7 @@ export interface BaseResponse {
 
 export interface ErrorResponse extends BaseResponse {
   data?: any;
+  trace_id?: string;
   errors?: Array<{
     name: string;
     message: string;
@@ -161,7 +162,8 @@ export enum HttpStatusCode {
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
   NOT_FOUND = 404,
-  INTERNAL_SERVER_ERROR = 500
+  INTERNAL_SERVER_ERROR = 500,
+  SERVICE_UNAVAILABLE = 503
 }
 
 export enum ApiErrorCode {
@@ -172,6 +174,10 @@ export enum ApiErrorCode {
   INVALID_SIGNATURE = 1004,
   INSUFFICIENT_PERMISSIONS = 1005,
   RESOURCE_NOT_FOUND = 1006,
+  DATABASE_CONNECTION_FAILED = 5001,
+  DATABASE_QUERY_FAILED = 5002,
+  DATABASE_TIMEOUT = 5003,
+  SERVICE_UNAVAILABLE = 5004,
   INTERNAL_ERROR = 5000
 }
 
@@ -217,22 +223,71 @@ export interface ApiError {
   httpStatus: HttpStatusCode;
 }
 
+// Utility function to generate trace IDs
+export const generateTraceId = (): string => {
+  const chars = '0123456789abcdef';
+  let result = '';
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+// Database error mapping utility
+export const mapDatabaseError = (error: Error): { code: ApiErrorCode; httpStatus: HttpStatusCode; message: string } => {
+  const errorMessage = error.message.toLowerCase();
+  
+  if (errorMessage.includes('connection') || errorMessage.includes('connect')) {
+    return {
+      code: ApiErrorCode.DATABASE_CONNECTION_FAILED,
+      httpStatus: HttpStatusCode.SERVICE_UNAVAILABLE,
+      message: 'Database connection failed'
+    };
+  }
+  
+  if (errorMessage.includes('timeout')) {
+    return {
+      code: ApiErrorCode.DATABASE_TIMEOUT,
+      httpStatus: HttpStatusCode.SERVICE_UNAVAILABLE,
+      message: 'Database operation timed out'
+    };
+  }
+  
+  if (errorMessage.includes('not found') || errorMessage.includes('no rows')) {
+    return {
+      code: ApiErrorCode.RESOURCE_NOT_FOUND,
+      httpStatus: HttpStatusCode.NOT_FOUND,
+      message: 'Resource not found'
+    };
+  }
+  
+  // Default to query failed for other database errors
+  return {
+    code: ApiErrorCode.DATABASE_QUERY_FAILED,
+    httpStatus: HttpStatusCode.INTERNAL_SERVER_ERROR,
+    message: 'Database query failed'
+  };
+};
+
 // Common API Response Helpers
-export const createSuccessResponse = <T>(data: T, message = 'Success'): BaseResponse & { data: T } => ({
+export const createSuccessResponse = <T>(data: T, message = 'Success', traceId?: string): BaseResponse & { data: T; trace_id?: string } => ({
   code: ApiErrorCode.SUCCESS,
   msg: message,
   status: HttpStatusCode.OK,
-  data
+  data,
+  ...(traceId && { trace_id: traceId })
 });
 
 export const createErrorResponse = (
   code: ApiErrorCode,
   message: string,
-  httpStatus: HttpStatusCode = HttpStatusCode.BAD_REQUEST
+  httpStatus: HttpStatusCode = HttpStatusCode.BAD_REQUEST,
+  traceId?: string
 ): ErrorResponse => ({
   code,
   msg: message,
-  status: httpStatus
+  status: httpStatus,
+  ...(traceId && { trace_id: traceId })
 });
 
 // Legacy compatibility - keeping some existing interfaces for backward compatibility

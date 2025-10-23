@@ -18,4 +18,18 @@ router.post('/dop/api/v1/invoice/list', authenticateAndValidateSignature, Invoic
  */
 router.post('/dop/api/v1/invoice/handle', authenticateAndValidateSignature, InvoiceController.handleInvoice);
 
+/**
+ * Add Invoices Endpoint
+ * POST /dop/api/v1/invoice/add
+ * Requires authentication
+ */
+router.post('/dop/api/v1/invoice/add', authenticateAndValidateSignature, InvoiceController.addInvoices);
+
+/**
+ * Update Invoice Endpoint
+ * POST /dop/api/v1/invoice/update
+ * Requires authentication
+ */
+router.post('/dop/api/v1/invoice/update', authenticateAndValidateSignature, InvoiceController.updateInvoice);
+
 export default router;

@@ -129,10 +129,8 @@ export declare class TokenManager {
 
 export declare class SupabaseService {
   constructor(config: Config);
-  testConnection(): Promise<boolean>;
   getInvoices(filters: InvoiceFilters): Promise<{ data: InvoiceItem[]; count: number } | null>;
   updateInvoice(order_no: string, updateData: Partial<InvoiceItem>): Promise<boolean>;
-  initializeData(mockData: InvoiceItem[]): Promise<boolean>;
 }
 
 export declare class BusinessLogic {
@@ -144,10 +142,11 @@ export declare class BusinessLogic {
   authenticateToken(access_token: string): AuthResult;
   getInvoiceList(requestData: any): Promise<BusinessResult>;
   handleInvoice(requestData: any): Promise<BusinessResult>;
+  addInvoices(invoices: InvoiceItem[]): Promise<BusinessResult>;
+  updateInvoiceInfo(order_no: string, invoiceData: Partial<InvoiceItem>): Promise<BusinessResult>;
   getMerchantInfo(): BusinessResult;
 }
 
 export declare function createConfig(): Config;
 export declare function generateRandomString(length: number, charset?: string): string;
 export declare function generateTraceId(): string;
-export declare const mockInvoiceData: InvoiceItem[];

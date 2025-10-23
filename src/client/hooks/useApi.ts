@@ -97,6 +97,10 @@ export function useInvoices() {
     onError: (error) => {
       if (error.status === 401) {
         console.warn('Authentication required for invoice operations')
+      } else if (error.status === 503) {
+        console.warn('Database service unavailable for invoice operations')
+      } else if (error.status === 500) {
+        console.warn('Database error occurred during invoice operations')
       }
     }
   })

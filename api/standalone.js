@@ -11,7 +11,7 @@ const businessLogic = new BusinessLogic();
 
 const app = express();
 
-// 初始化业务逻辑
+// Initialize business logic (Supabase-only mode)
 businessLogic.initialize().catch(console.error);
 
 // Middleware
@@ -286,6 +286,66 @@ app.post('/dop/api/v1/invoice/handle', authenticateToken, async (req, res) => {
     res.json(result.data);
   } catch (error) {
     console.error('[Invoice-Handle] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
+
+// Add invoices
+app.post('/dop/api/v1/invoice/add', authenticateToken, async (req, res) => {
+  try {
+    const { invoices } = req.body;
+
+    if (!invoices || !Array.isArray(invoices) || invoices.length === 0) {
+      return res.status(400).json({
+        code: 1001,
+        msg: 'invoices array is required and must not be empty',
+        status: 400
+      });
+    }
+
+    const result = await businessLogic.addInvoices(invoices);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[Invoice-Add] Error:', error);
+    res.status(500).json({
+      code: 5000,
+      msg: 'Internal server error',
+      status: 500
+    });
+  }
+});
+
+// Update invoice
+app.post('/dop/api/v1/invoice/update', authenticateToken, async (req, res) => {
+  try {
+    const { order_no, invoice_data } = req.body;
+
+    if (!order_no || !invoice_data) {
+      return res.status(400).json({
+        code: 1001,
+        msg: 'order_no and invoice_data are required',
+        status: 400
+      });
+    }
+
+    const result = await businessLogic.updateInvoiceInfo(order_no, invoice_data);
+    
+    if (!result.success) {
+      return res.status(result.error.status).json(result.error);
+    }
+
+    res.json(result.data);
+  } catch (error) {
+    console.error('[Invoice-Update] Error:', error);
     res.status(500).json({
       code: 5000,
       msg: 'Internal server error',

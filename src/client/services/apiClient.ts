@@ -68,11 +68,24 @@ export class ApiClient {
     if (error.response) {
       // Server responded with error status
       const responseData = error.response.data as any
+      const status = error.response.status
+      
+      // Provide specific error messages for database-related errors
+      let errorMessage = responseData?.msg || error.message || 'Server error'
+      
+      if (status === 503) {
+        errorMessage = responseData?.msg || 'Service temporarily unavailable - database connection failed'
+      } else if (status === 500) {
+        errorMessage = responseData?.msg || 'Database error occurred while processing request'
+      } else if (status === 404) {
+        errorMessage = responseData?.msg || 'Requested resource not found'
+      }
+      
       return {
-        code: responseData?.code || error.response.status,
-        msg: responseData?.msg || error.message || 'Server error',
+        code: responseData?.code || status,
+        msg: errorMessage,
         data: responseData?.data || null,
-        status: error.response.status
+        status: status
       }
     } else if (error.request) {
       // Network error
@@ -125,10 +138,15 @@ export class ApiClient {
   // Invoice endpoints
   async getInvoiceList(params: {
     access_token: string
-    page?: number
+    page_no?: number
     page_size?: number
   }): Promise<ApiResponse> {
-    const response = await this.client.post('/dop/api/v1/invoice/list', params)
+    const requestData = {
+      access_token: params.access_token,
+      page_no: params.page_no || 1,
+      page_size: params.page_size || 10
+    }
+    const response = await this.client.post('/dop/api/v1/invoice/list', requestData)
     return response.data
   }
 
@@ -168,4 +186,4 @@ export class ApiClient {
 export const apiClient = new ApiClient()
 
 // Export types for use in components
-export type { ApiResponse, ApiError }
+export type { ApiResponse as ApiResponseType, ApiError as ApiErrorType }

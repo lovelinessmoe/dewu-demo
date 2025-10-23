@@ -112,24 +112,44 @@ class ExpressServer {
     // Merchant routes
     this.app.use('/', merchantRoutes);
 
-    // Serve React app in production
-    if (this.config.nodeEnv === 'production' && this.config.staticPath) {
-      this.app.get('*', (_req: Request, res: Response) => {
-        res.sendFile(path.join(this.config.staticPath!, 'index.html'));
+    // Serve React app (both development and production)
+    if (this.config.staticPath) {
+      // Serve static files
+      this.app.use(express.static(this.config.staticPath));
+      
+      // SPA fallback - serve index.html for all non-API routes
+      this.app.get('*', (req: Request, res: Response) => {
+        // Skip API routes
+        if (req.originalUrl.startsWith('/api/') || 
+            req.originalUrl.startsWith('/dop/') || 
+            req.originalUrl.startsWith('/health') ||
+            req.originalUrl.startsWith('/status')) {
+          const error = {
+            code: 404,
+            msg: `API route ${req.originalUrl} not found`,
+            status: 404,
+            requestId: req.requestId,
+            timestamp: new Date().toISOString()
+          };
+          return res.status(404).json(error);
+        }
+        
+        // Serve React app for all other routes
+        res.sendFile(path.resolve(this.config.staticPath!, 'index.html'));
+      });
+    } else {
+      // 404 handler when no static path is configured
+      this.app.use('*', (req: Request, res: Response) => {
+        const error = {
+          code: 404,
+          msg: `Route ${req.originalUrl} not found`,
+          status: 404,
+          requestId: req.requestId,
+          timestamp: new Date().toISOString()
+        };
+        res.status(404).json(error);
       });
     }
-
-    // 404 handler for unmatched routes
-    this.app.use('*', (req: Request, res: Response) => {
-      const error = {
-        code: 404,
-        msg: `Route ${req.originalUrl} not found`,
-        status: 404,
-        requestId: req.requestId,
-        timestamp: new Date().toISOString()
-      };
-      res.status(404).json(error);
-    });
   }
 
   private initializeErrorHandling(): void {

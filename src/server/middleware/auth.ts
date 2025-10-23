@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ErrorResponse, ApiErrorCode, HttpStatusCode, SignatureValidationRequest, SignatureValidationResult } from '../types/index';
+import { ErrorResponse, ApiErrorCode, HttpStatusCode, SignatureValidationRequest, SignatureValidationResult, generateTraceId, createErrorResponse } from '../types/index';
 import crypto from 'crypto';
 import { BusinessLogic } from '../../shared/core/index.js';
 
@@ -8,6 +8,7 @@ const businessLogic = new BusinessLogic();
 
 // Extended Request interface to include token data
 export interface AuthenticatedRequest extends Request {
+  requestId?: string;
   tokenData?: {
     access_token: string;
     open_id: string;
@@ -47,13 +48,14 @@ const isValidTokenFormat = (token: string): boolean => {
   return typeof token === 'string' && token.length > 0 && token.trim() === token;
 };
 
-// Helper function to create error response
-const createErrorResponse = (code: number, msg: string, status: number): ErrorResponse => {
+// Helper function to create error response (deprecated - use the one from types)
+const createAuthErrorResponse = (code: number, msg: string, status: number, traceId?: string): ErrorResponse => {
   return {
     code,
     msg,
     data: null,
-    status
+    status,
+    ...(traceId && { trace_id: traceId })
   };
 };
 
@@ -73,10 +75,11 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     const authResult = businessLogic.authenticateToken(access_token);
     
     if (!authResult.success) {
-      const errorResponse = createErrorResponse(
+      const errorResponse = createAuthErrorResponse(
         authResult.error!.code,
         authResult.error!.msg,
-        authResult.error!.status
+        authResult.error!.status,
+        generateTraceId()
       );
       res.status(authResult.error!.status).json(errorResponse);
       return;
@@ -98,10 +101,11 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
   } catch (error) {
     console.error('Authentication middleware error:', error);
 
-    const errorResponse = createErrorResponse(
+    const errorResponse = createAuthErrorResponse(
       ApiErrorCode.INTERNAL_ERROR,
       'Internal server error during authentication',
-      HttpStatusCode.INTERNAL_SERVER_ERROR
+      HttpStatusCode.INTERNAL_SERVER_ERROR,
+      generateTraceId()
     );
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json(errorResponse);
   }
@@ -111,10 +115,11 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
 export const requireScope = (requiredScopes: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.tokenData) {
-      const errorResponse = createErrorResponse(
+      const errorResponse = createAuthErrorResponse(
         ApiErrorCode.INVALID_TOKEN,
         'Authentication required',
-        HttpStatusCode.UNAUTHORIZED
+        HttpStatusCode.UNAUTHORIZED,
+        generateTraceId()
       );
       res.status(HttpStatusCode.UNAUTHORIZED).json(errorResponse);
       return;
@@ -124,10 +129,11 @@ export const requireScope = (requiredScopes: string[]) => {
     const hasRequiredScope = requiredScopes.some(scope => userScopes.includes(scope));
 
     if (!hasRequiredScope) {
-      const errorResponse = createErrorResponse(
+      const errorResponse = createAuthErrorResponse(
         ApiErrorCode.INSUFFICIENT_PERMISSIONS,
         `Insufficient permissions. Required scopes: ${requiredScopes.join(', ')}`,
-        HttpStatusCode.FORBIDDEN
+        HttpStatusCode.FORBIDDEN,
+        generateTraceId()
       );
       res.status(HttpStatusCode.FORBIDDEN).json(errorResponse);
       return;
@@ -251,7 +257,7 @@ export const validateSignature = (request: SignatureValidationRequest): Signatur
 };
 
 // Signature validation middleware
-export const validateRequestSignature = (req: Request, res: Response, next: NextFunction): void => {
+export const validateRequestSignature = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   try {
     // Log incoming request details for signature validation
     console.log(`[Signature] ${req.method} ${req.originalUrl}`);
@@ -271,10 +277,11 @@ export const validateRequestSignature = (req: Request, res: Response, next: Next
     });
 
     if (!validationResult.isValid) {
-      const errorResponse = createErrorResponse(
+      const errorResponse = createAuthErrorResponse(
         ApiErrorCode.INVALID_SIGNATURE,
         validationResult.error || 'Invalid request signature',
-        HttpStatusCode.UNAUTHORIZED
+        HttpStatusCode.UNAUTHORIZED,
+        generateTraceId()
       );
       res.status(HttpStatusCode.UNAUTHORIZED).json(errorResponse);
       return;
@@ -286,10 +293,11 @@ export const validateRequestSignature = (req: Request, res: Response, next: Next
   } catch (error) {
     console.error('Signature validation middleware error:', error);
 
-    const errorResponse = createErrorResponse(
+    const errorResponse = createAuthErrorResponse(
       ApiErrorCode.INTERNAL_ERROR,
       'Internal server error during signature validation',
-      HttpStatusCode.INTERNAL_SERVER_ERROR
+      HttpStatusCode.INTERNAL_SERVER_ERROR,
+      generateTraceId()
     );
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json(errorResponse);
   }
