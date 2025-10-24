@@ -335,8 +335,10 @@ se Display Styles */
   font-family: 'Courier New', monospace;
   font-size: 0.875rem;
   line-height: 1.5;
-  white-space: pre-wrap;
+  white-space: pre-wrap !important;
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: block;
 }
 
 .headersViewer {
