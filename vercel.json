@@ -40,10 +40,9 @@
     "VITE_NODE_ENV": "production",
     "REACT_APP_ENV": "production"
   },
-
   "headers": [
     {
-      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map))",
+      "source": "/.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map)",
       "headers": [
         {
           "key": "Cache-Control",
