@@ -19,8 +19,7 @@ export default defineConfig({
     emptyOutDir: true,
     // Ensure React is included in the bundle and not externalized
     rollupOptions: {
-      // Explicitly specify the input file
-      input: path.resolve(__dirname, 'src/client/index.html'),
+      // Let Vite automatically find index.html in the root directory
       // Prevent React from being externalized in production
       external: [],
       output: {
