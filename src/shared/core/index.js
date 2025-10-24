@@ -4,6 +4,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
+const { JWTTokenManager } = require('./jwt-token-manager');
 
 // 配置管理
 const createConfig = () => ({
@@ -28,6 +29,11 @@ const createConfig = () => ({
   tokens: {
     defaultExpiration: parseInt(process.env.TOKEN_EXPIRATION || '7200', 10),
     refreshExpiration: parseInt(process.env.REFRESH_TOKEN_EXPIRATION || '2592000', 10)
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    accessTokenExpiry: process.env.JWT_ACCESS_TOKEN_EXPIRY || '1h',
+    refreshTokenExpiry: process.env.JWT_REFRESH_TOKEN_EXPIRY || '30d'
   }
 });
 
@@ -42,59 +48,9 @@ const generateRandomString = (length, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcde
 
 const generateTraceId = () => generateRandomString(32, '0123456789');
 
-// Token 管理
-class TokenManager {
-  constructor() {
-    this.tokenStore = new Map();
-  }
-
-  createToken(access_token, open_id, scope = ['all']) {
-    const now = Date.now();
-    const expiresIn = 3600 * 1000; // 1 hour
-
-    const tokenData = {
-      access_token,
-      refresh_token: `refresh_${access_token}`,
-      open_id,
-      scope,
-      expires_at: now + expiresIn,
-      created_at: now
-    };
-
-    this.tokenStore.set(access_token, tokenData);
-    return tokenData;
-  }
-
-  validateToken(access_token) {
-    const storedToken = this.tokenStore.get(access_token);
-    if (!storedToken) {
-      return { valid: false, error: 'Invalid access token' };
-    }
-
-    if (Date.now() >= storedToken.expires_at) {
-      this.tokenStore.delete(access_token);
-      return { valid: false, error: 'Access token has expired' };
-    }
-
-    return { valid: true, tokenData: storedToken };
-  }
-
-  generateTokenResponse() {
-    return {
-      code: 200,
-      msg: 'success',
-      data: {
-        scope: ['all'],
-        open_id: generateRandomString(16),
-        access_token: generateRandomString(58),
-        access_token_expires_in: 31536000,
-        refresh_token: generateRandomString(58),
-        refresh_token_expires_in: 31536000
-      },
-      status: 200
-    };
-  }
-}
+// Token 管理 (已迁移到 JWT - 保留此注释用于文档)
+// 旧的内存存储 TokenManager 已被 JWTTokenManager 替代
+// JWTTokenManager 提供无状态的 token 管理，适合 Serverless 环境
 
 // Supabase 服务
 class SupabaseService {
@@ -217,7 +173,12 @@ class BusinessLogic {
     }
     
     this.config = createConfig();
-    this.tokenManager = new TokenManager();
+    // 使用新的 JWT Token Manager（无状态，Serverless 友好）
+    this.tokenManager = new JWTTokenManager({
+      jwtSecret: this.config.jwt.secret,
+      accessTokenExpiry: this.config.jwt.accessTokenExpiry,
+      refreshTokenExpiry: this.config.jwt.refreshTokenExpiry
+    });
     this.supabaseService = new SupabaseService(this.config);
     this.initialized = false;
     
@@ -238,6 +199,7 @@ class BusinessLogic {
     console.log('[Config] Environment:', this.config.server.nodeEnv);
     console.log('[Config] Supabase URL:', this.config.supabase.url);
     console.log('[Config] CORS Origin:', this.config.server.corsOrigin);
+    console.log('[Config] Token Management: JWT (Stateless)');
     console.log('[Core] System configured for Supabase-only operations');
 
     this.initialized = true;
@@ -259,16 +221,13 @@ class BusinessLogic {
       };
     }
 
-    // 生成 token 响应
-    const tokenResponse = this.tokenManager.generateTokenResponse();
+    // 生成唯一的 open_id
+    const open_id = generateRandomString(16);
     
-    // 存储 token
-    this.tokenManager.createToken(
-      tokenResponse.data.access_token,
-      tokenResponse.data.open_id,
-      tokenResponse.data.scope
-    );
+    // 生成 JWT token 响应（无状态，不需要存储）
+    const tokenResponse = this.tokenManager.generateTokenResponse(open_id);
 
+    console.log(`[OAuth2] Generated JWT token for open_id: ${open_id}`);
     return { success: true, data: tokenResponse };
   }
 
@@ -287,20 +246,30 @@ class BusinessLogic {
       };
     }
 
-    // 生成新 token 响应
-    const tokenResponse = this.tokenManager.generateTokenResponse();
+    // 验证 refresh token（无状态验证）
+    const validation = this.tokenManager.validateRefreshToken(refresh_token);
     
-    // 存储新 token
-    this.tokenManager.createToken(
-      tokenResponse.data.access_token,
-      tokenResponse.data.open_id,
-      tokenResponse.data.scope
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: {
+          code: 1003,
+          msg: validation.error,
+          status: 401
+        }
+      };
+    }
+
+    // 使用原来的 open_id 生成新的 token
+    const tokenResponse = this.tokenManager.generateTokenResponse(
+      validation.tokenData.open_id
     );
 
+    console.log(`[OAuth2] Refreshed JWT token for open_id: ${validation.tokenData.open_id}`);
     return { success: true, data: tokenResponse };
   }
 
-  // 认证中间件逻辑
+  // 认证中间件逻辑（JWT 无状态验证）
   authenticateToken(access_token) {
     if (!access_token) {
       return {
@@ -313,6 +282,7 @@ class BusinessLogic {
       };
     }
 
+    // JWT 无状态验证
     const validation = this.tokenManager.validateToken(access_token);
     if (!validation.valid) {
       return {
@@ -719,7 +689,7 @@ class BusinessLogic {
 
 module.exports = {
   BusinessLogic,
-  TokenManager,
+  JWTTokenManager,  // 导出新的 JWT Token Manager
   SupabaseService,
   createConfig,
   generateRandomString,
