@@ -12,11 +12,12 @@ export default defineConfig({
       presets: []
     }
   })],
-  // Use absolute path for better Vercel compatibility
-  root: path.resolve(__dirname, 'src/client'),
-  publicDir: path.resolve(__dirname, 'src/client/public'),
+  // Use relative path for root - Vite will resolve it correctly
+  root: 'src/client',
+  publicDir: 'public',
   build: {
-    outDir: '../../dist/client',
+    // Use absolute path for output directory
+    outDir: path.resolve(__dirname, 'dist/client'),
     emptyOutDir: true,
     // Ensure React is included in the bundle and not externalized
     rollupOptions: {
