@@ -19,7 +19,8 @@ export default defineConfig({
     emptyOutDir: true,
     // Ensure React is included in the bundle and not externalized
     rollupOptions: {
-      input: path.resolve(__dirname, 'src/client/index.html'),
+      // Since root is 'src/client', the input should be relative to that
+      // input: path.resolve(__dirname, 'src/client/index.html'),
       // Prevent React from being externalized in production
       external: [],
       output: {
