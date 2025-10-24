@@ -9,6 +9,4 @@ node_modules/
 coverage/
 .nyc_output/
 dist/
-scripts/
-tsconfig*.json
-vite.config.ts
+tsconfig.server.json
