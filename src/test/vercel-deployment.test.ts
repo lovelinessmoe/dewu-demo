@@ -177,22 +177,22 @@ describe('Vercel Deployment Integration', () => {
       const vercelConfigPath = path.join(projectRoot, 'vercel.json');
       const config = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf8'));
       
-      // Should have routes or rewrites for SPA routing
-      const hasRouting = config.routes || config.rewrites || config.redirects;
-      expect(hasRouting).toBeTruthy();
+      // Should have rewrites for SPA routing
+      expect(config).toHaveProperty('rewrites');
+      expect(Array.isArray(config.rewrites)).toBe(true);
+      expect(config.rewrites.length).toBeGreaterThan(0);
     });
 
     it('should handle API proxy configuration', () => {
       const vercelConfigPath = path.join(projectRoot, 'vercel.json');
       const config = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf8'));
       
-      // Should have API routing configuration
-      if (config.routes) {
-        const apiRoutes = config.routes.filter((route: any) => 
-          route.src && route.src.includes('/api')
-        );
-        expect(apiRoutes.length).toBeGreaterThan(0);
-      }
+      // Should have API routing configuration via rewrites
+      expect(config.rewrites).toBeTruthy();
+      const apiRewrites = config.rewrites.filter((rewrite: any) => 
+        rewrite.source && rewrite.source.includes('/api')
+      );
+      expect(apiRewrites.length).toBeGreaterThan(0);
     });
   });
 
