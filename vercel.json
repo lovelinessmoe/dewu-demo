@@ -5,7 +5,8 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist/client"
+        "distDir": "dist/client",
+        "buildCommand": "npm run vercel-build"
       }
     },
     {
@@ -27,15 +28,47 @@
       "dest": "/api/standalone.js"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/$1"
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map))",
+      "dest": "/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
     }
   ],
   "env": {
-    "NODE_ENV": "production"
-  }
+    "NODE_ENV": "production",
+    "VITE_NODE_ENV": "production",
+    "REACT_APP_ENV": "production"
+  },
+  "functions": {
+    "api/standalone.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
 }
