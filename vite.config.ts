@@ -12,8 +12,9 @@ export default defineConfig({
       presets: []
     }
   })],
-  root: 'src/client',
-  publicDir: 'public',
+  // Use absolute path for better Vercel compatibility
+  root: path.resolve(__dirname, 'src/client'),
+  publicDir: path.resolve(__dirname, 'src/client/public'),
   build: {
     outDir: '../../dist/client',
     emptyOutDir: true,
