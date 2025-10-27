@@ -221,14 +221,29 @@ class BusinessLogic {
       };
     }
 
-    // 生成唯一的 open_id
-    const open_id = generateRandomString(16);
+    // 基于 authorization_code 生成确定性的 open_id
+    // 使用简单的哈希算法确保相同的 authorization_code 总是生成相同的 open_id
+    const open_id = this._generateDeterministicOpenId(authorization_code, client_id);
     
     // 生成 JWT token 响应（无状态，不需要存储）
     const tokenResponse = this.tokenManager.generateTokenResponse(open_id);
 
-    console.log(`[OAuth2] Generated JWT token for open_id: ${open_id}`);
+    console.log(`[OAuth2] Generated JWT token for open_id: ${open_id} (from auth_code: ${authorization_code})`);
     return { success: true, data: tokenResponse };
+  }
+
+  // 生成确定性的 open_id（基于 authorization_code 和 client_id）
+  _generateDeterministicOpenId(authorization_code, client_id) {
+    const crypto = require('crypto');
+    
+    // 使用 SHA256 哈希算法生成确定性的 open_id
+    const hash = crypto
+      .createHash('sha256')
+      .update(`${authorization_code}:${client_id}`)
+      .digest('hex');
+    
+    // 取前16个字符作为 open_id（保持与原格式一致）
+    return hash.substring(0, 16);
   }
 
   refreshToken(requestData) {

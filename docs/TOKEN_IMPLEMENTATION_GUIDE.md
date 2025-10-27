@@ -233,13 +233,31 @@ class BusinessLogic {
       };
     }
 
-    // 生成唯一的 open_id
-    const open_id = generateRandomString(16);
+    // 基于 authorization_code 生成确定性的 open_id
+    // 使用 SHA256 哈希算法确保相同的 authorization_code 总是生成相同的 open_id
+    const open_id = this._generateDeterministicOpenId(authorization_code, client_id);
     
     // 生成 JWT token 响应（无状态）
     const tokenResponse = this.tokenManager.generateTokenResponse(open_id);
 
     return { success: true, data: tokenResponse };
+  }
+
+  /**
+   * 生成确定性的 open_id（基于 authorization_code 和 client_id）
+   * 使用 SHA256 哈希算法确保相同输入总是产生相同输出
+   */
+  _generateDeterministicOpenId(authorization_code, client_id) {
+    const crypto = require('crypto');
+    
+    // 使用 SHA256 哈希算法生成确定性的 open_id
+    const hash = crypto
+      .createHash('sha256')
+      .update(`${authorization_code}:${client_id}`)
+      .digest('hex');
+    
+    // 取前16个字符作为 open_id（保持与原格式一致）
+    return hash.substring(0, 16);
   }
 
   refreshToken(requestData) {
@@ -415,6 +433,81 @@ class RedisTokenManager {
    - 如果需要 Token 撤销功能
    - 如果需要更细粒度的权限控制
    - 如果需要实时的 Token 黑名单
+
+---
+
+## 确定性 open_id 生成
+
+### 为什么需要确定性生成？
+
+在 OAuth2 流程中，`authorization_code` 是授权服务器颁发的临时授权码，用于换取 `access_token`。为了保证系统的一致性和可预测性，相同的 `authorization_code` 应该总是映射到相同的 `open_id`。
+
+### 实现原理
+
+使用 **SHA256 哈希算法** 基于 `authorization_code` 和 `client_id` 生成确定性的 `open_id`：
+
+```javascript
+_generateDeterministicOpenId(authorization_code, client_id) {
+  const crypto = require('crypto');
+  
+  // 使用 SHA256 哈希算法
+  const hash = crypto
+    .createHash('sha256')
+    .update(`${authorization_code}:${client_id}`)
+    .digest('hex');
+  
+  // 取前16个字符作为 open_id
+  return hash.substring(0, 16);
+}
+```
+
+### 特性
+
+1. **确定性**：相同的输入总是产生相同的输出
+   - `authorization_code` + `client_id` → 固定的 `open_id`
+
+2. **唯一性**：不同的输入产生不同的输出
+   - 不同的 `authorization_code` → 不同的 `open_id`
+   - 相同的 `authorization_code` 但不同的 `client_id` → 不同的 `open_id`
+
+3. **安全性**：使用加密哈希算法
+   - 无法从 `open_id` 反推 `authorization_code`
+   - SHA256 提供足够的碰撞抵抗性
+
+### 测试验证
+
+```javascript
+// 测试 1: 相同输入产生相同输出
+const result1 = generateToken({
+  client_id: 'client_123',
+  client_secret: 'secret',
+  authorization_code: 'AUTH_CODE_ABC'
+});
+
+const result2 = generateToken({
+  client_id: 'client_123',
+  client_secret: 'secret',
+  authorization_code: 'AUTH_CODE_ABC'
+});
+
+console.log(result1.data.open_id === result2.data.open_id); // true
+
+// 测试 2: 不同 authorization_code 产生不同 open_id
+const result3 = generateToken({
+  client_id: 'client_123',
+  client_secret: 'secret',
+  authorization_code: 'AUTH_CODE_XYZ'
+});
+
+console.log(result1.data.open_id !== result3.data.open_id); // true
+```
+
+### 优势
+
+1. **可预测性**：便于调试和测试
+2. **幂等性**：多次调用产生相同结果
+3. **无状态**：不需要存储 authorization_code 到 open_id 的映射关系
+4. **分布式友好**：多个服务器实例产生一致的结果
 
 ---
 
